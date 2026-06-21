@@ -1,0 +1,350 @@
+// Hypermarket platform — §4 data model (single source of truth).
+// Geo note: embedded-postgres has no PostGIS, so branch location is lat/lng and zones are
+// JSON polygons (matches the S2 spike). On the managed PostGIS host these become
+// geography columns (ADR-0002). Money is integer piastres everywhere (no floats).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  customer
+  branch_operator
+  branch_manager
+  hq_admin
+}
+
+enum OrderStatus {
+  placed
+  confirmed
+  picking
+  packed
+  out_for_delivery
+  delivered
+  cancelled
+  refunded
+}
+
+enum PaymentMethod {
+  online
+  cod
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  refunded
+  failed
+}
+
+enum PromotionType {
+  pct
+  fixed
+  bogo
+}
+
+enum CartStatus {
+  active
+  converted
+  abandoned
+}
+
+enum DeliveryStatus {
+  assigned
+  picked
+  delivered
+  failed
+}
+
+model Branch {
+  id          String         @id @default(uuid())
+  name        String
+  lat         Float
+  lng         Float
+  isActive    Boolean        @default(true) @map("is_active")
+  prepTimeMin Int            @default(15) @map("prep_time_min")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  zones       DeliveryZone[]
+  branchProducts BranchProduct[]
+  inventory   Inventory[]
+  prices      Price[]
+  orders      Order[]
+  couriers    Courier[]
+  staff       StaffUser[]
+
+  @@map("branches")
+}
+
+model DeliveryZone {
+  id       String @id @default(uuid())
+  branchId String @map("branch_id")
+  branch   Branch @relation(fields: [branchId], references: [id])
+  priority Int
+  polygon  Json
+  @@map("delivery_zones")
+}
+
+model Category {
+  id       String     @id @default(uuid())
+  nameAr   String     @map("name_ar")
+  nameEn   String     @map("name_en")
+  parentId String?    @map("parent_id")
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  sort     Int        @default(0)
+  imageUrl String?    @map("image_url")
+  products Product[]
+  @@map("categories")
+}
+
+model Product {
+  id          String          @id @default(uuid())
+  sku         String          @unique
+  nameAr      String          @map("name_ar")
+  nameEn      String          @map("name_en")
+  description String          @default("")
+  categoryId  String          @map("category_id")
+  category    Category        @relation(fields: [categoryId], references: [id])
+  basePrice   Int             @map("base_price") // piastres
+  imageUrls   String[]        @map("image_urls")
+  unit        String
+  isActive    Boolean         @default(true) @map("is_active") // master kill-switch (HQ)
+  branchProducts BranchProduct[]
+  inventory   Inventory[]
+  prices      Price[]
+  orderItems  OrderItem[]
+  cartItems   CartItem[]
+  @@map("products")
+}
+
+model BranchProduct {
+  id                String  @id @default(uuid())
+  productId         String  @map("product_id")
+  branchId          String  @map("branch_id")
+  product           Product @relation(fields: [productId], references: [id])
+  branch            Branch  @relation(fields: [branchId], references: [id])
+  isListed          Boolean @default(true) @map("is_listed") // per-branch visibility
+  lowStockThreshold Int     @default(5) @map("low_stock_threshold")
+  @@unique([productId, branchId])
+  @@map("branch_products")
+}
+
+model Inventory {
+  id           String   @id @default(uuid())
+  productId    String   @map("product_id")
+  branchId     String   @map("branch_id")
+  product      Product  @relation(fields: [productId], references: [id])
+  branch       Branch   @relation(fields: [branchId], references: [id])
+  qtyAvailable Int      @default(0) @map("qty_available")
+  qtyReserved  Int      @default(0) @map("qty_reserved")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+  @@unique([productId, branchId])
+  @@map("inventory")
+}
+
+model Price {
+  id        String    @id @default(uuid())
+  productId String    @map("product_id")
+  branchId  String?   @map("branch_id") // null = base (all branches)
+  product   Product   @relation(fields: [productId], references: [id])
+  branch    Branch?   @relation(fields: [branchId], references: [id])
+  price     Int // piastres
+  startsAt  DateTime? @map("starts_at")
+  endsAt    DateTime? @map("ends_at")
+  @@map("prices")
+}
+
+model Promotion {
+  id          String        @id @default(uuid())
+  code        String        @unique
+  type        PromotionType
+  value       Float
+  minSubtotal Int           @map("min_subtotal")
+  startsAt    DateTime      @map("starts_at")
+  endsAt      DateTime      @map("ends_at")
+  active      Boolean       @default(true)
+  @@map("promotions")
+}
+
+model Customer {
+  id        String    @id @default(uuid())
+  phone     String    @unique
+  name      String
+  createdAt DateTime  @default(now()) @map("created_at")
+  addresses Address[]
+  carts     Cart[]
+  orders    Order[]
+  @@map("customers")
+}
+
+model Address {
+  id         String   @id @default(uuid())
+  customerId String   @map("customer_id")
+  customer   Customer @relation(fields: [customerId], references: [id])
+  label      String
+  lat        Float
+  lng        Float
+  text       String
+  isDefault  Boolean  @default(false) @map("is_default")
+  orders     Order[]
+  @@map("addresses")
+}
+
+model Cart {
+  id         String     @id @default(uuid())
+  customerId String     @map("customer_id")
+  customer   Customer   @relation(fields: [customerId], references: [id])
+  branchId   String?    @map("branch_id")
+  status     CartStatus @default(active)
+  items      CartItem[]
+  @@map("carts")
+}
+
+model CartItem {
+  id                 String  @id @default(uuid())
+  cartId             String  @map("cart_id")
+  cart               Cart    @relation(fields: [cartId], references: [id])
+  productId          String  @map("product_id")
+  product            Product @relation(fields: [productId], references: [id])
+  qty                Int
+  unitPriceSnapshot  Int     @map("unit_price_snapshot")
+  @@map("cart_items")
+}
+
+model Order {
+  id            String        @id @default(uuid())
+  customerId    String        @map("customer_id")
+  branchId      String        @map("branch_id")
+  addressId     String        @map("address_id")
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  branch        Branch        @relation(fields: [branchId], references: [id])
+  address       Address       @relation(fields: [addressId], references: [id])
+  status        OrderStatus   @default(placed)
+  subtotal      Int
+  deliveryFee   Int           @map("delivery_fee")
+  discount      Int           @default(0)
+  total         Int
+  paymentMethod PaymentMethod @map("payment_method")
+  paymentStatus PaymentStatus @default(pending) @map("payment_status")
+  slotStart     DateTime?     @map("slot_start")
+  slotEnd       DateTime?     @map("slot_end")
+  placedAt      DateTime      @default(now()) @map("placed_at")
+  version       Int           @default(0)
+  items         OrderItem[]
+  events        OrderEvent[]
+  delivery      Delivery?
+  @@index([branchId, status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String  @map("order_id")
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+  qty       Int
+  unitPrice Int     @map("unit_price")
+  lineTotal Int     @map("line_total")
+  @@map("order_items")
+}
+
+model OrderEvent {
+  id        String      @id @default(uuid())
+  orderId   String      @map("order_id")
+  order     Order       @relation(fields: [orderId], references: [id])
+  status    OrderStatus
+  actor     String
+  note      String?
+  createdAt DateTime    @default(now()) @map("created_at")
+  @@map("order_events")
+}
+
+model Courier {
+  id          String   @id @default(uuid())
+  branchId    String   @map("branch_id")
+  branch      Branch   @relation(fields: [branchId], references: [id])
+  name        String
+  phone       String
+  isAvailable Boolean  @default(true) @map("is_available")
+  lastLat     Float?   @map("last_lat")
+  lastLng     Float?   @map("last_lng")
+  deliveries  Delivery[]
+  @@map("couriers")
+}
+
+model Delivery {
+  id          String         @id @default(uuid())
+  orderId     String         @unique @map("order_id")
+  order       Order          @relation(fields: [orderId], references: [id])
+  courierId   String?        @map("courier_id")
+  courier     Courier?       @relation(fields: [courierId], references: [id])
+  status      DeliveryStatus @default(assigned)
+  assignedAt  DateTime?      @map("assigned_at")
+  pickedAt    DateTime?      @map("picked_at")
+  deliveredAt DateTime?      @map("delivered_at")
+  @@map("deliveries")
+}
+
+model StaffUser {
+  id       String  @id @default(uuid())
+  branchId String? @map("branch_id") // null = HQ-admin
+  branch   Branch? @relation(fields: [branchId], references: [id])
+  role     Role
+  phone    String  @unique
+  name     String
+  @@map("staff_users")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String   @map("actor_id")
+  action    String
+  entity    String
+  entityId  String   @map("entity_id")
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  @@map("audit_log")
+}
+
+model IdempotencyKey {
+  key       String   @id
+  orderId   String?  @map("order_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  @@map("idempotency_keys")
+}
+
+model LoyaltyAccount {
+  customerId String   @id @map("customer_id")
+  points     Int      @default(0)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+  @@map("loyalty_accounts")
+}
+
+model LoyaltyLedger {
+  id         String   @id @default(uuid())
+  customerId String   @map("customer_id")
+  orderId    String?  @map("order_id")
+  delta      Int
+  reason     String
+  createdAt  DateTime @default(now()) @map("created_at")
+  @@index([customerId])
+  @@map("loyalty_ledger")
+}
+
+model OtpChallenge {
+  id        String   @id @default(uuid())
+  phone     String
+  codeHash  String   @map("code_hash")
+  expiresAt DateTime @map("expires_at")
+  consumed  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  @@index([phone])
+  @@map("otp_challenges")
+}

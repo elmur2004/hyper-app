@@ -1,0 +1,42 @@
+{
+  "name": "@hyper/api",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "prisma:generate": "prisma generate"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@hyper/db": "workspace:^",
+    "@hyper/shared": "workspace:^",
+    "@nestjs/common": "^11",
+    "@nestjs/core": "^11",
+    "@nestjs/platform-express": "^11",
+    "@prisma/client": "^6",
+    "reflect-metadata": "^0.2",
+    "rxjs": "^7",
+    "zod": "^3"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "^11",
+    "@swc/core": "^1.15.41",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22",
+    "@types/pg": "^8.20.0",
+    "@types/supertest": "^7.2.0",
+    "embedded-postgres": "18.4.0-beta.17",
+    "pg": "^8.21.0",
+    "prisma": "^6",
+    "supertest": "^7.2.2",
+    "typescript": "^5.7",
+    "unplugin-swc": "^1.5.9",
+    "vitest": "^2"
+  }
+}

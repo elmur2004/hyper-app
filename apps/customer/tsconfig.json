@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "comment": "Verified customer-side logic only. The Expo/RN screens under app/ require the Expo toolchain to typecheck/build and are excluded here (see README).",
+  "compilerOptions": {
+    "moduleResolution": "Bundler",
+    "module": "ESNext",
+    "types": ["node"],
+    "noEmit": true
+  },
+  "include": ["src", "*.config.ts"],
+  "exclude": ["dist", "node_modules", "app"]
+}

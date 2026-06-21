@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "Hyper",
+    "slug": "hyper-customer",
+    "scheme": "hyper",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "platforms": ["ios", "android"],
+    "extra": {
+      "comment": "Arabic-first; RTL forced in app/index.tsx. EXPO_PUBLIC_API_URL points at the API."
+    }
+  }
+}

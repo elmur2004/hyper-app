@@ -1,0 +1,19 @@
+{
+  "name": "@hyper/customer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hyper/shared": "workspace:*",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "typescript": "^5.7",
+    "vitest": "^2"
+  }
+}
