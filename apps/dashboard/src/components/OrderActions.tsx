@@ -1,5 +1,5 @@
 import { nextStates, type OrderStatus } from '@hyper/shared';
-import { Button } from '@hyper/shared/ui';
+import { Button } from '@/components/ui/button';
 
 const ACTION_LABEL_AR: Record<OrderStatus, string> = {
   placed: 'تم الطلب',
@@ -24,14 +24,14 @@ export function OrderActions({
   onTransition: (to: OrderStatus) => void;
 }) {
   const next = nextStates(status);
-  if (next.length === 0) return <span data-testid="no-actions">—</span>;
+  if (next.length === 0) return <span data-testid="no-actions" className="text-muted-foreground">—</span>;
   return (
-    <div style={{ display: 'flex', gap: 8 }}>
+    <div className="flex flex-wrap justify-end gap-2">
       {next.map((to) => (
         <Button
           key={to}
           size="sm"
-          variant={to === 'cancelled' ? 'danger' : 'secondary'}
+          variant={to === 'cancelled' || to === 'refunded' ? 'destructive' : 'secondary'}
           onClick={() => onTransition(to)}
         >
           {ACTION_LABEL_AR[to]}

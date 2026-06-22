@@ -177,6 +177,25 @@ export class AdminService {
     });
   }
 
+  /** Master product list with per-branch stock — drives the catalog-admin table. */
+  async listProducts(ctx: AuthContext) {
+    if (!isStaff(ctx)) throw new ForbiddenException('not permitted');
+    return this.prisma.product.findMany({
+      select: {
+        id: true,
+        sku: true,
+        nameAr: true,
+        nameEn: true,
+        basePrice: true,
+        unit: true,
+        isActive: true,
+        imageUrls: true,
+        inventory: { select: { branchId: true, qtyAvailable: true } },
+      },
+      orderBy: { nameAr: 'asc' },
+    });
+  }
+
   async createBranch(ctx: AuthContext, data: { name: string; lat: number; lng: number; prepTimeMin?: number }) {
     assertCanEditMasterCatalog(ctx);
     return this.prisma.branch.create({ data });

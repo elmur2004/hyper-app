@@ -56,6 +56,11 @@ export class AdminController {
     return this.admin.listCategories(a);
   }
 
+  @Get('products')
+  listProducts(@CurrentActor() a: AuthContext) {
+    return this.admin.listProducts(a);
+  }
+
   @Post('branches')
   createBranch(
     @CurrentActor() a: AuthContext,
