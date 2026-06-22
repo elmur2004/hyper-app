@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button, Card } from '@hyper/shared/ui';
 import { api } from '../api';
 
@@ -11,6 +11,17 @@ import { api } from '../api';
 export function CatalogAdminPage() {
   const [form, setForm] = useState({ sku: '', nameAr: '', nameEn: '', categoryId: '', basePrice: '', unit: 'ea' });
   const [msg, setMsg] = useState<string | null>(null);
+
+  const categories = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => api.admin.listCategories(),
+  });
+
+  // Default the category to the first one once the list loads.
+  useEffect(() => {
+    const first = categories.data?.[0];
+    if (!form.categoryId && first) setForm((f) => ({ ...f, categoryId: first.id }));
+  }, [form.categoryId, categories.data]);
 
   const create = useMutation({
     mutationFn: () =>
@@ -45,7 +56,23 @@ export function CatalogAdminPage() {
         {field('sku', 'SKU')}
         {field('nameAr', 'الاسم (عربي)')}
         {field('nameEn', 'الاسم (إنجليزي)')}
-        {field('categoryId', 'معرّف التصنيف')}
+        <label style={{ display: 'block', marginBottom: 8 }}>
+          التصنيف
+          <select
+            aria-label="categoryId"
+            value={form.categoryId}
+            onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+            style={{ width: '100%', padding: 8 }}
+          >
+            {categories.isLoading && <option>...جارٍ تحميل التصنيفات</option>}
+            {categories.data?.length === 0 && <option value="">لا توجد تصنيفات</option>}
+            {categories.data?.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nameAr}
+              </option>
+            ))}
+          </select>
+        </label>
         {field('basePrice', 'السعر (بالقروش)')}
         {msg && <p>{msg}</p>}
         <Button onClick={() => create.mutate()} loading={create.isPending}>

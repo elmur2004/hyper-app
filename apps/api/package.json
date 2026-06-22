@@ -4,14 +4,17 @@
   "private": true,
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "dev": "node --env-file-if-exists=.env --watch -r @swc-node/register src/main.ts",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint .",
     "test": "vitest run",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "seed": "node --env-file-if-exists=.env -r @swc-node/register prisma/seed.ts"
   },
   "prisma": {
-    "schema": "prisma/schema.prisma"
+    "schema": "prisma/schema.prisma",
+    "seed": "node -r @swc-node/register prisma/seed.ts"
   },
   "dependencies": {
     "@hyper/db": "workspace:^",
@@ -26,6 +29,7 @@
   },
   "devDependencies": {
     "@nestjs/testing": "^11",
+    "@swc-node/register": "^1.11.1",
     "@swc/core": "^1.15.41",
     "@types/express": "^5.0.6",
     "@types/node": "^22",

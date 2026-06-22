@@ -146,6 +146,10 @@ export function createApiClient(config: ApiClientConfig) {
         req('/admin/stock', { method: 'POST', body: JSON.stringify({ branchId, productId, qtyAvailable }), auth: true }),
       setPrice: (productId: string, branchId: string | null, price: number) =>
         req('/admin/prices', { method: 'POST', body: JSON.stringify({ productId, branchId, price }), auth: true }),
+      listBranches: () =>
+        req<{ id: string; name: string; isActive: boolean }[]>('/admin/branches', { auth: true }),
+      listCategories: () =>
+        req<{ id: string; nameAr: string; nameEn: string }[]>('/admin/categories', { auth: true }),
       createBranch: (body: { name: string; lat: number; lng: number }) =>
         req('/admin/branches', { method: 'POST', body: JSON.stringify(body), auth: true }),
       createZone: (body: { branchId: string; priority: number; polygon: object }) =>

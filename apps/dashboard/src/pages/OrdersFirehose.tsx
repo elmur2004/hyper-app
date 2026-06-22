@@ -11,7 +11,7 @@ import { OrderActions } from '../components/OrderActions';
  * after each transition and on focus.
  */
 export function OrdersFirehosePage() {
-  const { actor, logout } = useAuth();
+  const { actor } = useAuth();
   const qc = useQueryClient();
   const { data, isLoading, isError } = useQuery({
     queryKey: ['orders', 'queue'],
@@ -26,9 +26,8 @@ export function OrdersFirehosePage() {
 
   return (
     <div style={{ padding: 24 }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <header>
         <h1>الطلبات {actor?.role === 'hq_admin' ? '(كل الفروع)' : '(فرعك)'}</h1>
-        <button onClick={logout}>خروج</button>
       </header>
       {isLoading && <p>...جارٍ التحميل</p>}
       {isError && <p style={{ color: '#D11149' }}>تعذر تحميل الطلبات</p>}

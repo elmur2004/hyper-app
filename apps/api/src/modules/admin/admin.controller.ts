@@ -46,6 +46,16 @@ export class AdminController {
     return this.admin.setStock(a, body.branchId, body.productId, body.qtyAvailable);
   }
 
+  @Get('branches')
+  listBranches(@CurrentActor() a: AuthContext) {
+    return this.admin.listBranches(a);
+  }
+
+  @Get('categories')
+  listCategories(@CurrentActor() a: AuthContext) {
+    return this.admin.listCategories(a);
+  }
+
   @Post('branches')
   createBranch(
     @CurrentActor() a: AuthContext,

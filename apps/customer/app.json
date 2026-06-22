@@ -5,9 +5,19 @@
     "scheme": "hyper",
     "version": "0.1.0",
     "orientation": "portrait",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "plugins": [
+      "expo-router"
+    ],
+    "web": {
+      "bundler": "metro"
+    },
     "extra": {
-      "comment": "Arabic-first; RTL forced in app/index.tsx. EXPO_PUBLIC_API_URL points at the API."
+      "comment": "Arabic-first; RTL forced in app/_layout.tsx. EXPO_PUBLIC_API_URL points at the API."
     }
   }
 }

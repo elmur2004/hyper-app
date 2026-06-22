@@ -158,6 +158,25 @@ export class AdminService {
 
   // ---- Branches / zones / staff (HQ-admin only) ----
 
+  /** List branches for staff UIs (HQ sees all; branch staff see only their own). */
+  async listBranches(ctx: AuthContext) {
+    if (!isStaff(ctx)) throw new ForbiddenException('not permitted');
+    return this.prisma.branch.findMany({
+      where: ctx.role === 'hq_admin' ? {} : { id: ctx.branchId ?? undefined },
+      select: { id: true, name: true, isActive: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  /** List categories for the catalog-admin product form (any staff). */
+  async listCategories(ctx: AuthContext) {
+    if (!isStaff(ctx)) throw new ForbiddenException('not permitted');
+    return this.prisma.category.findMany({
+      select: { id: true, nameAr: true, nameEn: true },
+      orderBy: { nameAr: 'asc' },
+    });
+  }
+
   async createBranch(ctx: AuthContext, data: { name: string; lat: number; lng: number; prepTimeMin?: number }) {
     assertCanEditMasterCatalog(ctx);
     return this.prisma.branch.create({ data });

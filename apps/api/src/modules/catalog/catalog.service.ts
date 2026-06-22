@@ -29,7 +29,7 @@ export class CatalogService {
       branchId: r.branch_id as CustomerCatalogRow['branchId'],
       nameAr: r.name_ar,
       nameEn: r.name_en,
-      imageUrls: r.image_urls,
+      imageUrls: r.image_urls ?? [],
       unit: r.unit,
       price: Number(r.price),
       inStock: r.in_stock,
